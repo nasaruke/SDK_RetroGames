@@ -1,6 +1,6 @@
 """
 emulador.py — Lanzamiento del emulador.
-Muestra la imagen de controles de la consola y lanza mednafen.
+Muestra imagen de controles y lanza mednafen.
 """
 
 import subprocess
@@ -36,11 +36,12 @@ class Emulador:
         """
         Flujo completo para iniciar un juego:
             1. Mostrar pantalla de controles.
-            2. Cerrar display de pygame para liberar pantalla.
-            3. Lanzar mednafen y esperar a que termine.
-            4. Reiniciar display de pygame al regresar.
+            2. Cerrar display pygame para liberar el framebuffer.
+            3. Esperar 1 segundo para que el framebuffer quede libre.
+            4. Lanzar mednafen y esperar a que termine.
+            5. Esperar 0.5 segundos antes de que pygame tome el framebuffer.
+            6. Reiniciar display al regresar.
         """
-        # Mostrar pantalla de controles — False significa que el usuario canceló
         if not self._mostrar_controles(consola, nombre_rom):
             return
 
@@ -51,14 +52,16 @@ class Emulador:
         print(f"[Emulador] Lanzando: {' '.join(comando)}")
 
         try:
-            # Detener audio y cerrar SOLO el display (igual que el Code.py del equipo)
-            # Esto libera la pantalla para que mednafen pueda tomarla
+            # Cerrar audio y display para liberar framebuffer a mednafen
             pygame.mixer.stop()
             pygame.display.quit()
 
-            # Lanzar mednafen como proceso — bloquea hasta que el usuario cierre el juego
+            # Esperar a que el framebuffer quede completamente libre
+            time.sleep(1)
+
+            # Lanzar mednafen — Popen guarda referencia para MonitorUSB
             self.proceso = subprocess.Popen(comando)
-            self.proceso.wait()  # Esperar a que mednafen termine
+            self.proceso.wait()  # Esperar a que el usuario cierre el juego
 
         except FileNotFoundError:
             print(f"[Emulador] Error: '{ejecutable}' no encontrado.")
@@ -66,8 +69,12 @@ class Emulador:
         finally:
             self.proceso = None
 
-            # Reiniciar SOLO el display al regresar — igual que Code.py
+            # Esperar a que mednafen libere el framebuffer
+            time.sleep(0.5)
+
+            # Reiniciar display al regresar del emulador
             pygame.display.init()
+            pygame.mixer.init()
             self.pantalla.superficie = pygame.display.set_mode(
                 (self.pantalla.ancho, self.pantalla.alto),
                 pygame.FULLSCREEN
@@ -76,8 +83,8 @@ class Emulador:
 
     def _mostrar_controles(self, consola: str, nombre_rom: str) -> bool:
         """
-        Muestra imagen de controles y espera que el usuario presione un botón.
-        Devuelve True para jugar, False si presionó Escape para cancelar.
+        Muestra imagen de controles con texto parpadeante.
+        Devuelve True para jugar, False si Escape cancela.
         """
         imagen_nombre = self.IMAGENES_CONTROLES.get(consola)
         ruta_imagen   = os.path.join(self.ruta_imagenes, imagen_nombre) if imagen_nombre else None
@@ -135,7 +142,7 @@ class Emulador:
             reloj.tick(30)
 
     def _mostrar_error(self, mensaje: str):
-        """Muestra un mensaje de error en pantalla durante 3 segundos."""
+        """Muestra mensaje de error durante 3 segundos."""
         self.pantalla.limpiar(self.COLOR_FONDO)
         y = self.pantalla.alto // 2 - 40
         for linea in mensaje.split("\n"):
