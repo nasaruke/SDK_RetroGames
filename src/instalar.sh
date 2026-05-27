@@ -76,7 +76,7 @@ echo "Códigos clonados en $RUTA_PROYECTO"
 echo ""
 
 # =============================================================================
-# PASO 4 — Descargar y descomprimir recursos del branch instalaciones
+# PASO 4 — Descargar y descomprimir recursos en src/
 # =============================================================================
 echo "==================================================="
 echo "PASO 4: Descargando recursos (ROMs, assets, config)..."
@@ -85,6 +85,11 @@ echo "==================================================="
 REPO_RAW="https://raw.githubusercontent.com/nasaruke/SDK_RetroGames/instalaciones"
 TEMP_DIR="$HOME_DIR/temp_instalacion"
 mkdir -p "$TEMP_DIR"
+
+# Crear estructura de carpetas dentro de src/
+mkdir -p "$RUTA_SRC/roms/nes"
+mkdir -p "$RUTA_SRC/roms/snes"
+mkdir -p "$RUTA_SRC/roms/gba"
 
 # Descargar todos los zips
 echo "Descargando assets..."
@@ -102,30 +107,25 @@ wget -q "$REPO_RAW/snes.zip" -O "$TEMP_DIR/snes.zip"
 echo "Descargando ROMs GBA..."
 wget -q "$REPO_RAW/gba.zip" -O "$TEMP_DIR/gba.zip"
 
-# Crear estructura de carpetas
-mkdir -p "$RUTA_PROYECTO/roms/nes"
-mkdir -p "$RUTA_PROYECTO/roms/snes"
-mkdir -p "$RUTA_PROYECTO/roms/gba"
-
-# assets.zip tiene carpeta assets/ adentro — descomprimir directo en el proyecto
+# assets.zip tiene carpeta assets/ adentro — descomprimir en src/
 echo "Descomprimiendo assets..."
-unzip -q "$TEMP_DIR/assets.zip" -d "$RUTA_PROYECTO/"
+unzip -q "$TEMP_DIR/assets.zip" -d "$RUTA_SRC/"
 
-# config.zip tiene carpeta config/ adentro — descomprimir directo en el proyecto
+# config.zip tiene carpeta config/ adentro — descomprimir en src/
 echo "Descomprimiendo config..."
-unzip -q "$TEMP_DIR/config.zip" -d "$RUTA_PROYECTO/"
+unzip -q "$TEMP_DIR/config.zip" -d "$RUTA_SRC/"
 
-# nes.zip tiene carpeta nes/ adentro — descomprimir en roms/ para que quede roms/nes/
+# nes.zip tiene carpeta nes/ adentro — descomprimir en src/roms/
 echo "Descomprimiendo ROMs NES..."
-unzip -q "$TEMP_DIR/nes.zip" -d "$RUTA_PROYECTO/roms/"
+unzip -q "$TEMP_DIR/nes.zip" -d "$RUTA_SRC/roms/"
 
-# snes.zip tiene carpeta snes/ adentro — descomprimir en roms/
+# snes.zip tiene carpeta snes/ adentro — descomprimir en src/roms/
 echo "Descomprimiendo ROMs SNES..."
-unzip -q "$TEMP_DIR/snes.zip" -d "$RUTA_PROYECTO/roms/"
+unzip -q "$TEMP_DIR/snes.zip" -d "$RUTA_SRC/roms/"
 
-# gba.zip tiene carpeta gba/ adentro — descomprimir en roms/
+# gba.zip tiene carpeta gba/ adentro — descomprimir en src/roms/
 echo "Descomprimiendo ROMs GBA..."
-unzip -q "$TEMP_DIR/gba.zip" -d "$RUTA_PROYECTO/roms/"
+unzip -q "$TEMP_DIR/gba.zip" -d "$RUTA_SRC/roms/"
 
 # Limpiar archivos temporales
 rm -rf "$TEMP_DIR"
@@ -166,8 +166,8 @@ kill $MEDNAFEN_PID 2>/dev/null
 wait $MEDNAFEN_PID 2>/dev/null
 
 # Copiar el cfg ya configurado con los controles Xbox
-if [ -f "$RUTA_PROYECTO/config/mednafen/mednafen.cfg" ]; then
-    cp "$RUTA_PROYECTO/config/mednafen/mednafen.cfg" "$HOME_DIR/.mednafen/mednafen.cfg"
+if [ -f "$RUTA_SRC/config/mednafen/mednafen.cfg" ]; then
+    cp "$RUTA_SRC/config/mednafen/mednafen.cfg" "$HOME_DIR/.mednafen/mednafen.cfg"
     echo "mednafen.cfg con controles Xbox Series copiado."
 else
     echo "ADVERTENCIA: No se encontró config/mednafen/mednafen.cfg"
@@ -281,6 +281,13 @@ if [ ! -f "$PYTHON_SCRIPT" ]; then
     exit 1
 fi
 
+# Verificar que los recursos están en su lugar
+echo "Verificando estructura de archivos..."
+ls "$RUTA_SRC/config/configuracion.json" && echo "  ✓ configuracion.json" || echo "  ✗ configuracion.json NO encontrado"
+ls "$RUTA_SRC/config/mednafen/mednafen.cfg" && echo "  ✓ mednafen.cfg" || echo "  ✗ mednafen.cfg NO encontrado"
+ls "$RUTA_SRC/assets/imagenes/logo_SDK.png" && echo "  ✓ logo_SDK.png" || echo "  ✗ logo_SDK.png NO encontrado"
+ls "$RUTA_SRC/roms/nes/" && echo "  ✓ ROMs NES" || echo "  ✗ ROMs NES NO encontradas"
+
 touch "$LOG_FILE"
 chown $USUARIO:$USUARIO "$LOG_FILE"
 echo "Verificación completada."
@@ -295,7 +302,7 @@ echo "==================================================="
 echo ""
 echo "  ✓ Dependencias instaladas"
 echo "  ✓ Códigos clonados de GitHub"
-echo "  ✓ ROMs y assets descargados"
+echo "  ✓ ROMs y assets en src/"
 echo "  ✓ mednafen configurado con controles Xbox Series"
 echo "  ✓ Permisos USB configurados"
 echo "  ✓ Mensajes de arranque ocultados"
