@@ -3,8 +3,6 @@
 # =============================================================================
 # instalar.sh — Instalación automática de Consola Retro SDK
 # Proyecto Final — Fundamentos de Sistemas Embebidos UNAM
-#
-# Uso: bash instalar.sh
 # =============================================================================
 
 echo ""
@@ -47,7 +45,7 @@ echo "==================================================="
 echo "PASO 2: Instalando dependencias..."
 echo "==================================================="
 
-sudo apt install -y git unzip python3 python3-pip python3-pygame
+sudo apt install -y git unzip python3 python3-pip python3-dev python3-pygame
 sudo apt install -y python3-pyudev
 sudo apt install -y mednafen
 sudo apt install -y util-linux
@@ -55,6 +53,9 @@ sudo apt install -y util-linux
 # Dependencias SDL necesarias para imagen en Raspbian Lite
 sudo apt install -y libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev
 sudo apt install -y libsdl2-2.0-0
+
+# Dependencia adicional para Raspberry Pi
+sudo apt install -y libatlas-base-dev
 
 echo "Dependencias instaladas."
 echo ""
@@ -107,23 +108,19 @@ wget -q "$REPO_RAW/snes.zip" -O "$TEMP_DIR/snes.zip"
 echo "Descargando ROMs GBA..."
 wget -q "$REPO_RAW/gba.zip" -O "$TEMP_DIR/gba.zip"
 
-# assets.zip tiene carpeta assets/ adentro — descomprimir en src/
+# Descomprimir en src/
 echo "Descomprimiendo assets..."
 unzip -q "$TEMP_DIR/assets.zip" -d "$RUTA_SRC/"
 
-# config.zip tiene carpeta config/ adentro — descomprimir en src/
 echo "Descomprimiendo config..."
 unzip -q "$TEMP_DIR/config.zip" -d "$RUTA_SRC/"
 
-# nes.zip tiene carpeta nes/ adentro — descomprimir en src/roms/
 echo "Descomprimiendo ROMs NES..."
 unzip -q "$TEMP_DIR/nes.zip" -d "$RUTA_SRC/roms/"
 
-# snes.zip tiene carpeta snes/ adentro — descomprimir en src/roms/
 echo "Descomprimiendo ROMs SNES..."
 unzip -q "$TEMP_DIR/snes.zip" -d "$RUTA_SRC/roms/"
 
-# gba.zip tiene carpeta gba/ adentro — descomprimir en src/roms/
 echo "Descomprimiendo ROMs GBA..."
 unzip -q "$TEMP_DIR/gba.zip" -d "$RUTA_SRC/roms/"
 
@@ -161,9 +158,9 @@ mkdir -p "$HOME_DIR/.mednafen"
 
 # Correr mednafen una vez para generar su cfg base
 echo "Generando configuración base de mednafen..."
-sudo -u $USUARIO SDL_VIDEODRIVER=dummy mednafen &
+sudo -u $USUARIO mednafen &
 MEDNAFEN_PID=$!
-sleep 8
+sleep 10
 kill $MEDNAFEN_PID 2>/dev/null
 wait $MEDNAFEN_PID 2>/dev/null
 
@@ -203,7 +200,6 @@ echo "==================================================="
 echo "PASO 8: Ocultando mensajes de arranque..."
 echo "==================================================="
 
-# Ocultar mensajes del kernel
 CMDLINE="/boot/firmware/cmdline.txt"
 if [ ! -f "$CMDLINE" ]; then
     CMDLINE="/boot/cmdline.txt"
@@ -211,7 +207,7 @@ fi
 
 if [ -f "$CMDLINE" ]; then
     if ! grep -q "quiet loglevel=0 logo.nologo fsck.mode=skip" "$CMDLINE"; then
-        sudo sed -i 's/$/ quiet loglevel=0 logo.nologo fsck.mode=skip/' "$CMDLINE"
+        sudo sed -i 's/$/ quiet loglevel=0 logo.nologo fsck.mode=skip rd.systemd.show_status=false rd.udev.log_level=3/' "$CMDLINE"
         echo "Mensajes del kernel ocultados."
     else
         echo "Kernel ya estaba configurado."
@@ -231,38 +227,39 @@ echo "Mensajes de arranque ocultados."
 echo ""
 
 # =============================================================================
-# PASO 9 — Arranque automático con systemd
+# PASO 9 — Arranque automático con cron (igual que ccjpmmGaming)
 # =============================================================================
 echo "==================================================="
-echo "PASO 9: Configurando arranque automático..."
+echo "PASO 9: Configurando arranque automático con cron..."
 echo "==================================================="
 
-sudo tee /etc/systemd/system/consola-retro.service > /dev/null << SERVICIO
-[Unit]
-Description=Consola Retro SDK
-After=multi-user.target sound.target
-Wants=sound.target
+# Crear archivo de log
+touch "$LOG_FILE"
+chown $USUARIO:$USUARIO "$LOG_FILE"
 
-[Service]
-Type=simple
-User=$USUARIO
-WorkingDirectory=$RUTA_SRC
-Environment="SDL_VIDEODRIVER=kmsdrm"
-Environment="SDL_AUDIODRIVER=alsa"
-Environment="HOME=$HOME_DIR"
-ExecStart=/usr/bin/python3 $PYTHON_SCRIPT
-Restart=on-failure
-RestartSec=3
-StandardOutput=append:$LOG_FILE
-StandardError=append:$LOG_FILE
+# Verificar que el script existe
+if [ ! -f "$PYTHON_SCRIPT" ]; then
+    echo "ERROR: No se encontró $PYTHON_SCRIPT"
+    exit 1
+fi
 
-[Install]
-WantedBy=multi-user.target
-SERVICIO
+# Agregar arranque con cron usando @reboot
+# Incluye las variables SDL necesarias para pygame
+CRON_CMD="@reboot export SDL_VIDEODRIVER=kmsdrm && export SDL_AUDIODRIVER=alsa && cd $RUTA_SRC && python3 $PYTHON_SCRIPT >> $LOG_FILE 2>&1"
 
+if crontab -u $USUARIO -l 2>/dev/null | grep -q "$PYTHON_SCRIPT"; then
+    echo "Cron ya está configurado."
+else
+    (crontab -u $USUARIO -l 2>/dev/null; echo "$CRON_CMD") | crontab -u $USUARIO -
+    echo "Cron configurado para arranque automático."
+fi
+
+# Deshabilitar systemd si estaba configurado antes
+sudo systemctl disable consola-retro.service 2>/dev/null
+sudo rm -f /etc/systemd/system/consola-retro.service
 sudo systemctl daemon-reload
-sudo systemctl enable consola-retro.service
-echo "Servicio de arranque automático configurado."
+
+echo "Arranque automático configurado."
 echo ""
 
 # =============================================================================
@@ -290,20 +287,12 @@ echo "==================================================="
 echo "PASO 11: Verificando instalación..."
 echo "==================================================="
 
-if [ ! -f "$PYTHON_SCRIPT" ]; then
-    echo "ERROR: No se encontró $PYTHON_SCRIPT"
-    exit 1
-fi
-
-# Verificar que los recursos están en su lugar
 echo "Verificando estructura de archivos..."
-ls "$RUTA_SRC/config/configuracion.json"      && echo "  ✓ configuracion.json"   || echo "  ✗ configuracion.json NO encontrado"
-ls "$RUTA_SRC/config/mednafen/mednafen.cfg"   && echo "  ✓ mednafen.cfg"         || echo "  ✗ mednafen.cfg NO encontrado"
-ls "$RUTA_SRC/assets/imagenes/logo_SDK.png"   && echo "  ✓ logo_SDK.png"         || echo "  ✗ logo_SDK.png NO encontrado"
-ls "$RUTA_SRC/roms/nes/"                      && echo "  ✓ ROMs NES"             || echo "  ✗ ROMs NES NO encontradas"
+ls "$RUTA_SRC/config/configuracion.json"    && echo "  ✓ configuracion.json"  || echo "  ✗ configuracion.json NO encontrado"
+ls "$RUTA_SRC/config/mednafen/mednafen.cfg" && echo "  ✓ mednafen.cfg"        || echo "  ✗ mednafen.cfg NO encontrado"
+ls "$RUTA_SRC/assets/imagenes/logo_SDK.png" && echo "  ✓ logo_SDK.png"        || echo "  ✗ logo_SDK.png NO encontrado"
+ls "$RUTA_SRC/roms/nes/"                    && echo "  ✓ ROMs NES"            || echo "  ✗ ROMs NES NO encontradas"
 
-touch "$LOG_FILE"
-chown $USUARIO:$USUARIO "$LOG_FILE"
 echo "Verificación completada."
 echo ""
 
@@ -320,12 +309,10 @@ echo "  ✓ ROMs y assets en src/"
 echo "  ✓ mednafen configurado con controles Xbox Series"
 echo "  ✓ Permisos USB y shutdown configurados"
 echo "  ✓ Mensajes de arranque ocultados"
-echo "  ✓ Arranque automático configurado"
+echo "  ✓ Arranque automático con cron configurado"
 echo "  ✓ Login automático configurado"
 echo ""
 echo "Para ver errores: cat $LOG_FILE"
-echo "Para detener:     sudo systemctl stop consola-retro"
-echo "Para reiniciar:   sudo systemctl start consola-retro"
 echo ""
 echo "El sistema se reiniciará en 10 segundos..."
 sleep 10
