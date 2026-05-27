@@ -52,9 +52,9 @@ sudo apt install -y python3-pyudev
 sudo apt install -y mednafen
 sudo apt install -y util-linux
 
-# Dependencias SDL necesarias para que pygame muestre imagen en Raspbian Lite
+# Dependencias SDL necesarias para imagen en Raspbian Lite
 sudo apt install -y libsdl2-dev libsdl2-mixer-dev libsdl2-image-dev libsdl2-ttf-dev
-sudo apt install -y libsdl2-2.0-0t64 || sudo apt install -y libsdl2-2.0-0
+sudo apt install -y libsdl2-2.0-0
 
 echo "Dependencias instaladas."
 echo ""
@@ -66,7 +66,6 @@ echo "==================================================="
 echo "PASO 3: Clonando repositorio (códigos)..."
 echo "==================================================="
 
-# Limpiar instalación anterior si existe
 if [ -d "$RUTA_PROYECTO" ]; then
     echo "Eliminando instalación anterior..."
     rm -rf "$RUTA_PROYECTO"
@@ -91,7 +90,7 @@ mkdir -p "$TEMP_DIR"
 echo "Descargando assets..."
 wget -q "$REPO_RAW/assets.zip" -O "$TEMP_DIR/assets.zip"
 
-echo "Descargando config (mednafen.cfg)..."
+echo "Descargando config..."
 wget -q "$REPO_RAW/config.zip" -O "$TEMP_DIR/config.zip"
 
 echo "Descargando ROMs NES..."
@@ -108,21 +107,25 @@ mkdir -p "$RUTA_PROYECTO/roms/nes"
 mkdir -p "$RUTA_PROYECTO/roms/snes"
 mkdir -p "$RUTA_PROYECTO/roms/gba"
 
-# Descomprimir todo en su lugar
+# assets.zip tiene carpeta assets/ adentro — descomprimir directo en el proyecto
 echo "Descomprimiendo assets..."
 unzip -q "$TEMP_DIR/assets.zip" -d "$RUTA_PROYECTO/"
 
+# config.zip tiene carpeta config/ adentro — descomprimir directo en el proyecto
 echo "Descomprimiendo config..."
 unzip -q "$TEMP_DIR/config.zip" -d "$RUTA_PROYECTO/"
 
+# nes.zip tiene carpeta nes/ adentro — descomprimir en roms/ para que quede roms/nes/
 echo "Descomprimiendo ROMs NES..."
-unzip -q "$TEMP_DIR/nes.zip" -d "$RUTA_PROYECTO/roms/nes/"
+unzip -q "$TEMP_DIR/nes.zip" -d "$RUTA_PROYECTO/roms/"
 
+# snes.zip tiene carpeta snes/ adentro — descomprimir en roms/
 echo "Descomprimiendo ROMs SNES..."
-unzip -q "$TEMP_DIR/snes.zip" -d "$RUTA_PROYECTO/roms/snes/"
+unzip -q "$TEMP_DIR/snes.zip" -d "$RUTA_PROYECTO/roms/"
 
+# gba.zip tiene carpeta gba/ adentro — descomprimir en roms/
 echo "Descomprimiendo ROMs GBA..."
-unzip -q "$TEMP_DIR/gba.zip" -d "$RUTA_PROYECTO/roms/gba/"
+unzip -q "$TEMP_DIR/gba.zip" -d "$RUTA_PROYECTO/roms/"
 
 # Limpiar archivos temporales
 rm -rf "$TEMP_DIR"
