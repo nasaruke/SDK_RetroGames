@@ -5,6 +5,7 @@ Loop principal del sistema. Start o Escape muestran confirmación de salida.
 
 import pygame
 import os
+import subprocess
 from entrada import (
     ACCION_ARRIBA, ACCION_ABAJO, ACCION_CONFIRMAR, ACCION_ATRAS, ACCION_INICIO
 )
@@ -75,10 +76,12 @@ class Galeria:
         elif accion in (ACCION_INICIO, ACCION_ATRAS):
             if self._confirmar_salida():
                 self.en_ejecucion = False
+                # Apagar la Raspberry Pi completamente
+                subprocess.run(["sudo", "shutdown", "-h", "now"])
 
     def _confirmar_salida(self) -> bool:
         """
-        Muestra pantalla de confirmación antes de cerrar.
+        Muestra pantalla de confirmación antes de apagar.
         A para confirmar, B o Escape para cancelar.
         """
         reloj = pygame.time.Clock()
