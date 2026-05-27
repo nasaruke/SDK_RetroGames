@@ -136,16 +136,18 @@ echo ""
 # PASO 5 — Crear carpeta de montaje USB y permisos
 # =============================================================================
 echo "==================================================="
-echo "PASO 5: Configurando permisos USB..."
+echo "PASO 5: Configurando permisos USB y shutdown..."
 echo "==================================================="
 
 sudo mkdir -p /media/pi/usb_retro
 sudo chown $USUARIO:$USUARIO /media/pi
 sudo chown $USUARIO:$USUARIO /media/pi/usb_retro
-echo "$USUARIO ALL=(ALL) NOPASSWD: /bin/mount, /bin/umount" | sudo tee /etc/sudoers.d/mount_usb_retro
+
+# Permisos para mount, umount y shutdown sin contraseña
+echo "$USUARIO ALL=(ALL) NOPASSWD: /bin/mount, /bin/umount, /sbin/shutdown" | sudo tee /etc/sudoers.d/mount_usb_retro
 sudo chmod 440 /etc/sudoers.d/mount_usb_retro
 
-echo "Permisos USB configurados."
+echo "Permisos configurados."
 echo ""
 
 # =============================================================================
@@ -201,6 +203,7 @@ echo "==================================================="
 echo "PASO 8: Ocultando mensajes de arranque..."
 echo "==================================================="
 
+# Ocultar mensajes del kernel
 CMDLINE="/boot/firmware/cmdline.txt"
 if [ ! -f "$CMDLINE" ]; then
     CMDLINE="/boot/cmdline.txt"
@@ -209,11 +212,22 @@ fi
 if [ -f "$CMDLINE" ]; then
     if ! grep -q "quiet loglevel=0 logo.nologo fsck.mode=skip" "$CMDLINE"; then
         sudo sed -i 's/$/ quiet loglevel=0 logo.nologo fsck.mode=skip/' "$CMDLINE"
-        echo "Mensajes de arranque ocultados."
+        echo "Mensajes del kernel ocultados."
     else
-        echo "Ya estaba configurado."
+        echo "Kernel ya estaba configurado."
     fi
 fi
+
+# Suprimir mensajes de bienvenida de Debian
+sudo truncate -s 0 /etc/motd
+sudo truncate -s 0 /etc/issue
+sudo truncate -s 0 /etc/issue.net
+
+# Deshabilitar mensaje de último login
+sudo sed -i 's/^#PrintLastLog=yes/PrintLastLog=no/' /etc/systemd/logind.conf
+sudo sed -i 's/^PrintLastLog=yes/PrintLastLog=no/' /etc/systemd/logind.conf
+
+echo "Mensajes de arranque ocultados."
 echo ""
 
 # =============================================================================
@@ -237,7 +251,7 @@ Environment="SDL_VIDEODRIVER=kmsdrm"
 Environment="SDL_AUDIODRIVER=alsa"
 Environment="HOME=$HOME_DIR"
 ExecStart=/usr/bin/python3 $PYTHON_SCRIPT
-Restart=always
+Restart=on-failure
 RestartSec=3
 StandardOutput=append:$LOG_FILE
 StandardError=append:$LOG_FILE
@@ -283,10 +297,10 @@ fi
 
 # Verificar que los recursos están en su lugar
 echo "Verificando estructura de archivos..."
-ls "$RUTA_SRC/config/configuracion.json" && echo "  ✓ configuracion.json" || echo "  ✗ configuracion.json NO encontrado"
-ls "$RUTA_SRC/config/mednafen/mednafen.cfg" && echo "  ✓ mednafen.cfg" || echo "  ✗ mednafen.cfg NO encontrado"
-ls "$RUTA_SRC/assets/imagenes/logo_SDK.png" && echo "  ✓ logo_SDK.png" || echo "  ✗ logo_SDK.png NO encontrado"
-ls "$RUTA_SRC/roms/nes/" && echo "  ✓ ROMs NES" || echo "  ✗ ROMs NES NO encontradas"
+ls "$RUTA_SRC/config/configuracion.json"      && echo "  ✓ configuracion.json"   || echo "  ✗ configuracion.json NO encontrado"
+ls "$RUTA_SRC/config/mednafen/mednafen.cfg"   && echo "  ✓ mednafen.cfg"         || echo "  ✗ mednafen.cfg NO encontrado"
+ls "$RUTA_SRC/assets/imagenes/logo_SDK.png"   && echo "  ✓ logo_SDK.png"         || echo "  ✗ logo_SDK.png NO encontrado"
+ls "$RUTA_SRC/roms/nes/"                      && echo "  ✓ ROMs NES"             || echo "  ✗ ROMs NES NO encontradas"
 
 touch "$LOG_FILE"
 chown $USUARIO:$USUARIO "$LOG_FILE"
@@ -304,7 +318,7 @@ echo "  ✓ Dependencias instaladas"
 echo "  ✓ Códigos clonados de GitHub"
 echo "  ✓ ROMs y assets en src/"
 echo "  ✓ mednafen configurado con controles Xbox Series"
-echo "  ✓ Permisos USB configurados"
+echo "  ✓ Permisos USB y shutdown configurados"
 echo "  ✓ Mensajes de arranque ocultados"
 echo "  ✓ Arranque automático configurado"
 echo "  ✓ Login automático configurado"
