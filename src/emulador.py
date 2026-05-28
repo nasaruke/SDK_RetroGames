@@ -30,7 +30,7 @@ class Emulador:
         self.ruta_imagenes      = ruta_imagenes
         self.mapa_emuladores    = mapa_emuladores
         self.duracion_controles = duracion_controles
-        self.proceso            = None  # Referencia al proceso de mednafen
+        self.proceso            = None
 
     def lanzar(self, consola: str, nombre_rom: str, ruta_rom: str):
         """
@@ -38,7 +38,7 @@ class Emulador:
             1. Mostrar pantalla de controles.
             2. Cerrar display pygame para liberar el framebuffer.
             3. Esperar 1 segundo para que el framebuffer quede libre.
-            4. Lanzar mednafen y esperar a que termine.
+            4. Lanzar mednafen con variables de entorno explícitas.
             5. Esperar 0.5 segundos antes de que pygame tome el framebuffer.
             6. Reiniciar display al regresar.
         """
@@ -59,9 +59,15 @@ class Emulador:
             # Esperar a que el framebuffer quede completamente libre
             time.sleep(1)
 
-            # Lanzar mednafen — Popen guarda referencia para MonitorUSB
-            self.proceso = subprocess.Popen(comando)
-            self.proceso.wait()  # Esperar a que el usuario cierre el juego
+            # Pasar variables SDL explícitamente a mednafen
+            # Necesario cuando se lanza desde cron sin variables de entorno
+            entorno = os.environ.copy()
+            entorno["SDL_VIDEODRIVER"] = "kmsdrm"
+            entorno["SDL_AUDIODRIVER"] = "alsa"
+
+            # Lanzar mednafen con el entorno correcto
+            self.proceso = subprocess.Popen(comando, env=entorno)
+            self.proceso.wait()
 
         except FileNotFoundError:
             print(f"[Emulador] Error: '{ejecutable}' no encontrado.")
