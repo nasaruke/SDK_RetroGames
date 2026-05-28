@@ -12,6 +12,22 @@ echo "==================================================="
 echo ""
 echo ""
 
+# Obtener usuario real aunque se corra con sudo
+if [ -n "$SUDO_USER" ]; then
+    USUARIO=$SUDO_USER
+else
+    USUARIO=$(whoami)
+fi
+HOME_DIR="/home/$USUARIO"
+RUTA_PROYECTO="$HOME_DIR/consola_retro"
+RUTA_SRC="$RUTA_PROYECTO/src"
+PYTHON_SCRIPT="$RUTA_SRC/main.py"
+LOG_FILE="$HOME_DIR/consola_retro.log"
+
+echo "Usuario detectado: $USUARIO"
+echo "Carpeta del proyecto: $RUTA_PROYECTO"
+echo ""
+
 # Función para mostrar mensajes de instalación
 function instalar {
     echo ""
@@ -37,7 +53,7 @@ instalar "paquetes base" sudo apt update && sudo apt upgrade -y
 
 # 1. Instalar git, curl y clonar el repositorio
 instalar "Git y Curl" sudo apt install git curl -y
-git clone --branch main --single-branch https://github.com/nasaruke/SDK_RetroGames.git
+git clone --branch main --single-branch https://github.com/nasaruke/SDK_RetroGames.git "$HOME_DIR/SDK_RetroGames"
 
 # 2. Instalar dependencias esenciales
 instalar "Python y dependencias básicas" sudo apt install -y python3 python3-pip python3-dev
@@ -53,7 +69,7 @@ instalar "Pygame" sudo apt install -y python3 python3-pygame
 instalar "PyUDEV" sudo apt install -y python3 python3-pyudev
 
 # 6. Instalar dependencias adicionales para Raspberry Pi
-instalar "optimizaciones para Raspberry Pi" sudo apt install -y libatlas-base-dev libsdl2-2.0-0
+instalar "dependencias adicionales" sudo apt install -y libsdl2-2.0-0
 
 # 7. Crear estructura de directorios
 echo ""
@@ -61,31 +77,42 @@ echo ""
 echo "==================================================="
 echo "Creando estructura de directorios..."
 
-# Carpeta principal del proyecto
-mkdir -p ~/consola_retro/src/roms/nes
-mkdir -p ~/consola_retro/src/roms/snes
-mkdir -p ~/consola_retro/src/roms/gba
-mkdir -p ~/.mednafen
+mkdir -p "$RUTA_SRC/roms/nes"
+mkdir -p "$RUTA_SRC/roms/snes"
+mkdir -p "$RUTA_SRC/roms/gba"
+mkdir -p "$HOME_DIR/.mednafen"
 
 # Carpeta de montaje para USB
 sudo mkdir -p /media/pi/usb_retro
-sudo chown $USER:$USER /media/pi
-sudo chown $USER:$USER /media/pi/usb_retro
+sudo chown $USUARIO:$USUARIO /media/pi
+sudo chown $USUARIO:$USUARIO /media/pi/usb_retro
 
 echo "Directorios creados con éxito!"
 echo ""
 
-# 8. Descargar y descomprimir recursos desde branch instalaciones
+# 8. Copiar los códigos del repo clonado a src/
+echo ""
+echo ""
+echo "==================================================="
+echo "Copiando códigos del repositorio..."
+
+cp "$HOME_DIR/SDK_RetroGames/src/"*.py "$RUTA_SRC/"
+cp "$HOME_DIR/SDK_RetroGames/src/"*.sh "$RUTA_SRC/" 2>/dev/null
+chown -R $USUARIO:$USUARIO "$RUTA_PROYECTO"
+
+echo "Códigos copiados con éxito!"
+echo ""
+
+# 9. Descargar y descomprimir recursos desde branch instalaciones
 echo ""
 echo ""
 echo "==================================================="
 echo "Descargando y copiando archivos de consola..."
 
 REPO_RAW="https://raw.githubusercontent.com/nasaruke/SDK_RetroGames/instalaciones"
-TEMP_DIR=~/temp_instalacion
+TEMP_DIR="$HOME_DIR/temp_instalacion"
 mkdir -p "$TEMP_DIR"
 
-# Descargar zips con curl
 echo "Descargando assets..."
 curl -fsSL "$REPO_RAW/assets.zip" -o "$TEMP_DIR/assets.zip"
 
@@ -101,27 +128,19 @@ curl -fsSL "$REPO_RAW/snes.zip" -o "$TEMP_DIR/snes.zip"
 echo "Descargando ROMs GBA..."
 curl -fsSL "$REPO_RAW/gba.zip" -o "$TEMP_DIR/gba.zip"
 
-# Descomprimir en src/ igual que ccjpmmGaming
-unzip -q "$TEMP_DIR/assets.zip" -d ~/consola_retro/src/
-unzip -q "$TEMP_DIR/config.zip" -d ~/consola_retro/src/
-unzip -q "$TEMP_DIR/nes.zip"    -d ~/consola_retro/src/roms/
-unzip -q "$TEMP_DIR/snes.zip"   -d ~/consola_retro/src/roms/
-unzip -q "$TEMP_DIR/gba.zip"    -d ~/consola_retro/src/roms/
+# Descomprimir en src/
+unzip -q "$TEMP_DIR/assets.zip" -d "$RUTA_SRC/"
+unzip -q "$TEMP_DIR/config.zip" -d "$RUTA_SRC/"
+unzip -q "$TEMP_DIR/nes.zip"    -d "$RUTA_SRC/roms/"
+unzip -q "$TEMP_DIR/snes.zip"   -d "$RUTA_SRC/roms/"
+unzip -q "$TEMP_DIR/gba.zip"    -d "$RUTA_SRC/roms/"
 
-# Limpiar temporales
+# Limpiar temporales y repo clonado
 rm -rf "$TEMP_DIR"
-echo "Archivos copiados con éxito!"
-echo ""
+rm -rf "$HOME_DIR/SDK_RetroGames"
 
-# 9. Copiar los codigos del repo clonado a src/
-echo ""
-echo ""
-echo "==================================================="
-echo "Copiando códigos del repositorio..."
-cp SDK_RetroGames/src/*.py ~/consola_retro/src/
-cp SDK_RetroGames/src/*.sh ~/consola_retro/src/ 2>/dev/null
-rm -rf SDK_RetroGames
-echo "Códigos copiados con éxito!"
+chown -R $USUARIO:$USUARIO "$RUTA_PROYECTO"
+echo "Archivos copiados con éxito!"
 echo ""
 
 # 10. Permisos para mount, umount y shutdown sin contraseña
@@ -129,8 +148,10 @@ echo ""
 echo ""
 echo "==================================================="
 echo "Configurando permisos USB y shutdown..."
-echo "$USER ALL=(ALL) NOPASSWD: /bin/mount, /bin/umount, /sbin/shutdown" | sudo tee /etc/sudoers.d/consola_retro
+
+echo "$USUARIO ALL=(ALL) NOPASSWD: /bin/mount, /bin/umount, /sbin/shutdown" | sudo tee /etc/sudoers.d/consola_retro
 sudo chmod 440 /etc/sudoers.d/consola_retro
+
 echo "Permisos configurados con éxito!"
 echo ""
 
@@ -140,9 +161,6 @@ echo ""
 echo "==================================================="
 echo "Aplicando configuracion de arranque automatico...."
 
-PYTHON_SCRIPT="$HOME/consola_retro/src/main.py"
-LOG_FILE="$HOME/consola_retro.log"
-
 # Verificar que el script existe
 if [ ! -f "$PYTHON_SCRIPT" ]; then
     echo "Error: El archivo $PYTHON_SCRIPT no existe."
@@ -151,14 +169,15 @@ fi
 
 # Crear archivo de log
 touch "$LOG_FILE"
+chown $USUARIO:$USUARIO "$LOG_FILE"
 
 # Agregar arranque con cron incluyendo variables SDL
-CRON_CMD="@reboot export SDL_VIDEODRIVER=kmsdrm && export SDL_AUDIODRIVER=alsa && cd $HOME/consola_retro/src && python3 $PYTHON_SCRIPT >> $LOG_FILE 2>&1"
+CRON_CMD="@reboot export SDL_VIDEODRIVER=kmsdrm && export SDL_AUDIODRIVER=alsa && cd $RUTA_SRC && python3 $PYTHON_SCRIPT >> $LOG_FILE 2>&1"
 
-if crontab -l 2>/dev/null | grep -q "$PYTHON_SCRIPT"; then
+if crontab -u $USUARIO -l 2>/dev/null | grep -q "$PYTHON_SCRIPT"; then
     echo "Cron ya está configurado para ejecutar $PYTHON_SCRIPT al inicio."
 else
-    (crontab -l 2>/dev/null; echo "$CRON_CMD") | crontab -
+    (crontab -u $USUARIO -l 2>/dev/null; echo "$CRON_CMD") | crontab -u $USUARIO -
     echo "Configuración de cron agregada para ejecutar $PYTHON_SCRIPT al inicio."
 fi
 echo "¡Listo! configuracion de autoarranque hecha"
@@ -169,33 +188,32 @@ echo ""
 echo "==================================================="
 echo "Aplicando la configuracion de Mednafen...."
 
-# Obtener el nombre de usuario actual (no root)
-USERNAME=$(who am i | awk '{print $1}')
-if [ -z "$USERNAME" ]; then
-    USERNAME=$USER
-fi
-
 # Ejecuta Mednafen como usuario normal en segundo plano
-sudo -u $USERNAME mednafen &
+sudo -u $USUARIO mednafen &
 MEDNAFEN_PID=$!
 sleep 10
 kill $MEDNAFEN_PID 2>/dev/null
 wait $MEDNAFEN_PID 2>/dev/null
 
 # Copiar cfg con controles Xbox ya configurados
-cp ~/consola_retro/src/config/mednafen/mednafen.cfg ~/.mednafen/mednafen.cfg
-echo "mednafen.cfg con controles Xbox Series copiado."
+if [ -f "$RUTA_SRC/config/mednafen/mednafen.cfg" ]; then
+    cp "$RUTA_SRC/config/mednafen/mednafen.cfg" "$HOME_DIR/.mednafen/mednafen.cfg"
+    echo "mednafen.cfg con controles Xbox Series copiado."
+else
+    echo "ADVERTENCIA: No se encontró mednafen.cfg"
+fi
 
 # 13. Configurar variables de entorno SDL en .bashrc
 echo ""
 echo ""
 echo "==================================================="
 echo "Configurando variables SDL..."
-if ! grep -q "SDL_VIDEODRIVER" ~/.bashrc; then
-    echo "" >> ~/.bashrc
-    echo "# Variables para pygame en Raspbian Lite sin escritorio" >> ~/.bashrc
-    echo "export SDL_VIDEODRIVER=kmsdrm" >> ~/.bashrc
-    echo "export SDL_AUDIODRIVER=alsa" >> ~/.bashrc
+
+if ! grep -q "SDL_VIDEODRIVER" "$HOME_DIR/.bashrc"; then
+    echo "" >> "$HOME_DIR/.bashrc"
+    echo "# Variables para pygame en Raspbian Lite sin escritorio" >> "$HOME_DIR/.bashrc"
+    echo "export SDL_VIDEODRIVER=kmsdrm" >> "$HOME_DIR/.bashrc"
+    echo "export SDL_AUDIODRIVER=alsa" >> "$HOME_DIR/.bashrc"
     echo "Variables SDL agregadas a .bashrc"
 else
     echo "Variables SDL ya existen en .bashrc"
@@ -206,20 +224,22 @@ echo ""
 echo ""
 echo "==================================================="
 echo "Configurando login automático..."
+
 sudo mkdir -p /etc/systemd/system/getty@tty1.service.d/
 sudo tee /etc/systemd/system/getty@tty1.service.d/autologin.conf > /dev/null << AUTOLOGIN
 [Service]
 ExecStart=
-ExecStart=-/sbin/agetty --autologin $USERNAME --noclear %I \$TERM
+ExecStart=-/sbin/agetty --autologin $USUARIO --noclear %I \$TERM
 AUTOLOGIN
+
 sudo systemctl daemon-reload
-echo "Login automático configurado para $USERNAME."
+echo "Login automático configurado para $USUARIO."
 
 # 15. Modificar cmdline.txt para ocultar mensajes de arranque
 echo ""
 echo ""
 echo "==================================================="
-echo "Modificando /boot/firmware/cmdline.txt..."
+echo "Modificando cmdline.txt para ocultar mensajes..."
 
 CMDLINE="/boot/firmware/cmdline.txt"
 if [ ! -f "$CMDLINE" ]; then
