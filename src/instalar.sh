@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-# Instalador corregido para Consola Retro SDK en Raspberry Pi OS Lite
+# Instalador para Consola Retro SDK en Raspberry Pi OS Lite
 # Ejecutar con:
 # sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/nasaruke/SDK_RetroGames/main/src/instalar.sh)"
 
@@ -65,10 +65,11 @@ run_step "Instalando dependencias SDL" apt install -y \
     libsdl2-ttf-dev
 
 run_step "Instalando Pygame y PyUDEV" apt install -y python3-pygame python3-pyudev
+
 run_step "Instalando Mednafen" apt install -y mednafen
 
-# Mednafen en Debian/Raspberry suele quedar en /usr/games/mednafen.
-# El código llama "mednafen", así que creamos enlace global y también agregamos /usr/games al servicio.
+# Mednafen normalmente queda en /usr/games/mednafen.
+# El código usa "mednafen", por eso se crea enlace global.
 if [ -x /usr/games/mednafen ]; then
     ln -sf /usr/games/mednafen /usr/local/bin/mednafen
 elif command -v mednafen >/dev/null 2>&1; then
@@ -81,7 +82,7 @@ fi
 # ------------------------------------------------------------------
 # 2. Permisos de usuario para pantalla, audio y controles
 # ------------------------------------------------------------------
-run_step "Agregando usuario a grupos de video/audio/input/render" usermod -aG video,audio,input,render "$USUARIO"
+run_step "Agregando usuario a grupos video/audio/input/render" usermod -aG video,audio,input,render "$USUARIO"
 
 # ------------------------------------------------------------------
 # 3. Crear estructura del proyecto
@@ -96,10 +97,11 @@ mkdir -p "$RUTA_SRC/roms/snes"
 mkdir -p "$RUTA_SRC/roms/gba"
 mkdir -p "$HOME_DIR/.mednafen"
 mkdir -p /media/pi/usb_retro
+
 chown -R "$USUARIO:$USUARIO" "$RUTA_PROYECTO" "$HOME_DIR/.mednafen" /media/pi
 
 # ------------------------------------------------------------------
-# 4. Descargar/copy del código desde GitHub
+# 4. Descargar código desde GitHub
 # ------------------------------------------------------------------
 echo ""
 echo "==================================================="
@@ -107,11 +109,13 @@ echo "Descargando código fuente"
 echo "==================================================="
 
 rm -rf "$HOME_DIR/SDK_RetroGames"
+
 sudo -u "$USUARIO" git clone --branch main --single-branch \
     https://github.com/nasaruke/SDK_RetroGames.git "$HOME_DIR/SDK_RetroGames"
 
 cp "$HOME_DIR/SDK_RetroGames/src/"*.py "$RUTA_SRC/"
 cp "$HOME_DIR/SDK_RetroGames/src/"*.sh "$RUTA_SRC/" 2>/dev/null || true
+
 chown -R "$USUARIO:$USUARIO" "$RUTA_PROYECTO"
 
 # ------------------------------------------------------------------
@@ -124,6 +128,7 @@ echo "==================================================="
 
 REPO_RAW="https://raw.githubusercontent.com/nasaruke/SDK_RetroGames/instalaciones"
 TEMP_DIR="$HOME_DIR/temp_instalacion"
+
 rm -rf "$TEMP_DIR"
 mkdir -p "$TEMP_DIR"
 chown -R "$USUARIO:$USUARIO" "$TEMP_DIR"
@@ -141,6 +146,7 @@ unzip -oq "$TEMP_DIR/snes.zip"   -d "$RUTA_SRC/roms/"
 unzip -oq "$TEMP_DIR/gba.zip"    -d "$RUTA_SRC/roms/"
 
 rm -rf "$TEMP_DIR" "$HOME_DIR/SDK_RetroGames"
+
 chown -R "$USUARIO:$USUARIO" "$RUTA_PROYECTO"
 
 # ------------------------------------------------------------------
@@ -154,6 +160,7 @@ echo "==================================================="
 cat > /etc/sudoers.d/consola_retro <<SUDOERS
 $USUARIO ALL=(ALL) NOPASSWD: /bin/mount, /bin/umount, /usr/bin/mount, /usr/bin/umount, /sbin/shutdown, /usr/sbin/shutdown
 SUDOERS
+
 chmod 440 /etc/sudoers.d/consola_retro
 
 # ------------------------------------------------------------------
@@ -164,15 +171,18 @@ echo "==================================================="
 echo "Configurando Mednafen"
 echo "==================================================="
 
-# Generar configuración inicial de mednafen como usuario real, sin romper permisos.
-# Puede fallar si no hay display; no es crítico porque copiamos config del proyecto.
+# Generar configuración inicial de Mednafen como usuario real.
+# Puede fallar si no hay display; no es crítico.
 sudo -u "$USUARIO" env HOME="$HOME_DIR" /usr/local/bin/mednafen >/tmp/mednafen_init.log 2>&1 &
 MEDNAFEN_PID=$!
+
 sleep 3
+
 kill "$MEDNAFEN_PID" 2>/dev/null || true
 wait "$MEDNAFEN_PID" 2>/dev/null || true
 
 mkdir -p "$HOME_DIR/.mednafen"
+
 if [ -f "$RUTA_SRC/config/mednafen/mednafen.cfg" ]; then
     cp "$RUTA_SRC/config/mednafen/mednafen.cfg" "$HOME_DIR/.mednafen/mednafen.cfg"
     echo "mednafen.cfg copiado."
@@ -180,10 +190,12 @@ else
     echo "ADVERTENCIA: No se encontró $RUTA_SRC/config/mednafen/mednafen.cfg"
 fi
 
-# Este arreglo evita el PermissionError de /home/pi/.mednafen/mednafen.cfg
 chown -R "$USUARIO:$USUARIO" "$HOME_DIR/.mednafen"
 chmod 755 "$HOME_DIR/.mednafen"
-[ -f "$HOME_DIR/.mednafen/mednafen.cfg" ] && chmod 644 "$HOME_DIR/.mednafen/mednafen.cfg"
+
+if [ -f "$HOME_DIR/.mednafen/mednafen.cfg" ]; then
+    chmod 644 "$HOME_DIR/.mednafen/mednafen.cfg"
+fi
 
 # ------------------------------------------------------------------
 # 8. Variables SDL en .bashrc para pruebas manuales
@@ -202,6 +214,7 @@ export SDL_AUDIODRIVER=alsa
 export PATH="$PATH:/usr/games:/usr/local/bin"
 BASHRC
 fi
+
 chown "$USUARIO:$USUARIO" "$HOME_DIR/.bashrc"
 
 # ------------------------------------------------------------------
@@ -220,10 +233,8 @@ else
     echo "No había cron viejo del proyecto."
 fi
 
-# Si el servicio quedó masked por pruebas anteriores, quitar máscara.
 systemctl unmask consola-retro.service 2>/dev/null || true
 
-# Crear log con permisos correctos.
 touch "$LOG_FILE"
 chown "$USUARIO:$USUARIO" "$LOG_FILE"
 chmod 664 "$LOG_FILE"
@@ -238,7 +249,6 @@ cat > "$SERVICE_FILE" <<SERVICE
 Description=Consola Retro SDK
 After=multi-user.target sound.target local-fs.target
 Wants=sound.target
-# Para modo mantenimiento, crear /boot/NO_CONSOLA y reiniciar.
 ConditionPathExists=!/boot/NO_CONSOLA
 ConditionPathExists=!/boot/firmware/NO_CONSOLA
 
@@ -248,18 +258,15 @@ User=$USUARIO
 Group=$USUARIO
 WorkingDirectory=$RUTA_SRC
 Environment=HOME=$HOME_DIR
+Environment=USER=$USUARIO
 Environment=SDL_VIDEODRIVER=kmsdrm
 Environment=SDL_AUDIODRIVER=alsa
 Environment=PYTHONUNBUFFERED=1
 Environment=PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin:/usr/games
 ExecStart=/usr/bin/python3 $PYTHON_SCRIPT
-StandardInput=tty
 StandardOutput=append:$LOG_FILE
 StandardError=append:$LOG_FILE
-TTYPath=/dev/tty1
-TTYReset=yes
-TTYVHangup=yes
-Restart=on-failure
+Restart=always
 RestartSec=3
 
 [Install]
@@ -270,20 +277,15 @@ systemctl daemon-reload
 systemctl enable consola-retro.service
 
 # ------------------------------------------------------------------
-# 10. Autologin TTY1
+# 10. TTY de mantenimiento
 # ------------------------------------------------------------------
 echo ""
 echo "==================================================="
-echo "Configurando login automático en tty1"
+echo "Configurando tty2 para mantenimiento"
 echo "==================================================="
 
-mkdir -p /etc/systemd/system/getty@tty1.service.d/
-cat > /etc/systemd/system/getty@tty1.service.d/autologin.conf <<AUTOLOGIN
-[Service]
-ExecStart=
-ExecStart=-/sbin/agetty --autologin $USUARIO --noclear %I \$TERM
-AUTOLOGIN
-systemctl daemon-reload
+# Para mantenimiento se puede usar Ctrl + Alt + F2.
+systemctl enable getty@tty2.service 2>/dev/null || true
 
 # ------------------------------------------------------------------
 # 11. Ocultar mensajes de arranque
@@ -307,7 +309,6 @@ if [ -f "$CMDLINE" ]; then
     fi
 fi
 
-# Suprimir mensajes de bienvenida
 truncate -s 0 /etc/motd || true
 truncate -s 0 /etc/issue || true
 truncate -s 0 /etc/issue.net || true
@@ -321,16 +322,20 @@ echo "==================================================="
 echo " INSTALACIÓN COMPLETADA"
 echo "==================================================="
 echo ""
+echo "Usuario: $USUARIO"
 echo "Mednafen: $(command -v mednafen || true)"
 echo "Servicio: $SERVICE_FILE"
 echo "Log: $LOG_FILE"
 echo ""
 echo "Comandos útiles:"
-echo "  Ver log:      cat $LOG_FILE"
-echo "  Estado:       sudo systemctl status consola-retro.service"
-echo "  Desactivar:   sudo systemctl disable --now consola-retro.service"
-echo "  Mantenimiento: sudo touch /boot/NO_CONSOLA && sudo reboot"
+echo "  Ver log:        cat $LOG_FILE"
+echo "  Estado:         sudo systemctl status consola-retro.service"
+echo "  Desactivar:     sudo systemctl disable --now consola-retro.service"
+echo "  Activar:        sudo systemctl enable --now consola-retro.service"
+echo "  Mantenimiento:  sudo touch /boot/NO_CONSOLA && sudo reboot"
+echo "  Volver normal:  sudo rm /boot/NO_CONSOLA && sudo reboot"
 echo ""
 echo "El sistema se reiniciará en 10 segundos..."
 sleep 10
+
 reboot
