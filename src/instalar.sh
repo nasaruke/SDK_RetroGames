@@ -71,6 +71,11 @@ instalar "PyUDEV" sudo apt install -y python3 python3-pyudev
 # 6. Instalar dependencias adicionales para Raspberry Pi
 instalar "dependencias adicionales" sudo apt install -y libsdl2-2.0-0
 
+# 6.1 Instalar cron
+instalar "Cron" sudo apt install -y cron
+sudo systemctl enable cron
+sudo systemctl start cron
+
 # 7. Crear estructura de directorios
 echo ""
 echo ""
@@ -80,8 +85,11 @@ echo "Creando estructura de directorios..."
 mkdir -p "$RUTA_SRC/roms/nes"
 mkdir -p "$RUTA_SRC/roms/snes"
 mkdir -p "$RUTA_SRC/roms/gba"
-mkdir -p "$HOME_DIR/.mednafen"
 
+# Crear carpeta .mednafen con permisos correctos desde el inicio
+sudo -u $USUARIO mkdir -p "$HOME_DIR/.mednafen"
+
+# Carpeta de montaje para USB
 sudo mkdir -p /media/pi/usb_retro
 sudo chown $USUARIO:$USUARIO /media/pi
 sudo chown $USUARIO:$USUARIO /media/pi/usb_retro
@@ -127,12 +135,14 @@ curl -fsSL "$REPO_RAW/snes.zip" -o "$TEMP_DIR/snes.zip"
 echo "Descargando ROMs GBA..."
 curl -fsSL "$REPO_RAW/gba.zip" -o "$TEMP_DIR/gba.zip"
 
+# Descomprimir en src/
 unzip -q "$TEMP_DIR/assets.zip" -d "$RUTA_SRC/"
 unzip -q "$TEMP_DIR/config.zip" -d "$RUTA_SRC/"
 unzip -q "$TEMP_DIR/nes.zip"    -d "$RUTA_SRC/roms/"
 unzip -q "$TEMP_DIR/snes.zip"   -d "$RUTA_SRC/roms/"
 unzip -q "$TEMP_DIR/gba.zip"    -d "$RUTA_SRC/roms/"
 
+# Limpiar temporales y repo clonado
 rm -rf "$TEMP_DIR"
 rm -rf "$HOME_DIR/SDK_RetroGames"
 
@@ -158,14 +168,17 @@ echo ""
 echo "==================================================="
 echo "Aplicando configuracion de arranque automatico...."
 
+# Verificar que el script existe
 if [ ! -f "$PYTHON_SCRIPT" ]; then
     echo "Error: El archivo $PYTHON_SCRIPT no existe."
     exit 1
 fi
 
+# Crear archivo de log
 touch "$LOG_FILE"
 chown $USUARIO:$USUARIO "$LOG_FILE"
 
+# Agregar arranque con cron incluyendo variables SDL
 CRON_CMD="@reboot export SDL_VIDEODRIVER=kmsdrm && export SDL_AUDIODRIVER=alsa && cd $RUTA_SRC && python3 $PYTHON_SCRIPT >> $LOG_FILE 2>&1"
 
 if crontab -u $USUARIO -l 2>/dev/null | grep -q "$PYTHON_SCRIPT"; then
@@ -182,18 +195,25 @@ echo ""
 echo "==================================================="
 echo "Aplicando la configuracion de Mednafen...."
 
-# Ejecuta Mednafen como usuario normal para que el cfg
-# se genere con los permisos correctos del usuario
-sudo -u $USUARIO mednafen &
+# Correr mednafen como usuario normal para generar cfg con permisos correctos
+echo "Generando configuración base de mednafen..."
+sudo -u $USUARIO /usr/games/mednafen &
 MEDNAFEN_PID=$!
 sleep 10
 kill $MEDNAFEN_PID 2>/dev/null
 wait $MEDNAFEN_PID 2>/dev/null
 
 # Copiar cfg con controles Xbox como usuario normal
-# Esto evita el error de permisos que ocurre cuando se copia como root
-sudo -u $USUARIO cp "$RUTA_SRC/config/mednafen/mednafen.cfg" "$HOME_DIR/.mednafen/mednafen.cfg"
-echo "mednafen.cfg con controles Xbox Series copiado."
+# Esto evita el error de permisos que ocurre cuando root copia el archivo
+if [ -f "$RUTA_SRC/config/mednafen/mednafen.cfg" ]; then
+    sudo -u $USUARIO cp "$RUTA_SRC/config/mednafen/mednafen.cfg" "$HOME_DIR/.mednafen/mednafen.cfg"
+    sudo chown -R $USUARIO:$USUARIO "$HOME_DIR/.mednafen/"
+    sudo chmod 755 "$HOME_DIR/.mednafen/"
+    sudo chmod 644 "$HOME_DIR/.mednafen/mednafen.cfg"
+    echo "mednafen.cfg con controles Xbox Series copiado."
+else
+    echo "ADVERTENCIA: No se encontró mednafen.cfg"
+fi
 
 # 13. Configurar variables de entorno SDL en .bashrc
 echo ""
@@ -247,6 +267,7 @@ if [ -f "$CMDLINE" ]; then
     fi
 fi
 
+# Suprimir mensajes de bienvenida de Debian
 sudo truncate -s 0 /etc/motd
 sudo truncate -s 0 /etc/issue
 sudo truncate -s 0 /etc/issue.net
