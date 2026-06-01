@@ -1,3 +1,13 @@
+<div align="center">
+
+```text
+███████╗██████╗ ██╗  ██╗
+██╔════╝██╔══██╗██║ ██╔╝
+███████╗██║  ██║█████╔╝ 
+╚════██║██║  ██║██╔═██╗ 
+███████║██████╔╝██║  ██╗
+╚══════╝╚═════╝ ╚═╝  ╚═╝
+
 ## 💻 Metodo de Instalacion
 Para una correcta instalacion es necesario que se tengan dos cosas:
 - Conexion por cable Ethernet a internet para la Raspberry
