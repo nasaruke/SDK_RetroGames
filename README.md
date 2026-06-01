@@ -43,27 +43,29 @@ Este proyecto puede tambien hacer una copia de las roms que se le pasen por USB 
 - Monitor: Cualquier monitor con coneccion HDMI
 - Audio: Bocinas externas con conexion jack de 3.5 mm 
 
-## Estructura del Proyecto  
+## 📂 Estructura del Proyecto
 
+```text
 SDK_RetroGames/
-├── README.md
-├── LICENSE                               #Licencia
-├── doc/                             #Carpeta con documentacion de cada uno de los integrantes del equipo
-├── vid/                                  #Carpeta con vinculo a video del funcionamiento de la consola
+├── README.md                              # Archivo principal de información del proyecto
+├── LICENSE                                # Licencia del proyecto
+├── doc/                                   # Documentación de cada integrante del equipo
+├── vid/                                   # Vínculo al video del funcionamiento de la consola
 └── src/
-    ├── instalar.sh                           #Instalador que configura todo
-    ├── main.py                               #Archivo principal de la consola
-    ├── pantalla.py                           #Control de pantalla y audio
-    ├── entrada.py                            #Lector y traduccion de control 
-    ├── arranque.py                           #Inicializacion de la consola
-    ├── galeria.py                            #Menu y navegacion por las ROMs
-    ├── emulador.py                           #Ejecuta Mednafen para abrir juegos
-    ├── usb_monitor.py                        #Deteccion de USB y ROMs
-    ├── __init__.py                           #Archivo para organizar el proyecto
-    ├── config/                               #Carpeta con configuracion general del sistema
-    │   └── mednafen/                         #Carpeta con preconfiguracion de controles y del emulador
-    ├── assets/                               #Carpeta con audio y imagenes 
+    ├── instalar.sh                        # Instalador que configura todo el sistema
+    ├── main.py                            # Archivo principal de la consola
+    ├── pantalla.py                        # Control de pantalla y audio
+    ├── entrada.py                         # Lectura y traducción del control
+    ├── arranque.py                        # Inicialización de la consola
+    ├── galeria.py                         # Menú y navegación por las ROMs
+    ├── emulador.py                        # Ejecuta Mednafen para abrir juegos
+    ├── usb_monitor.py                     # Detección de USB y ROMs
+    ├── __init__.py                        # Archivo para organizar el proyecto
+    ├── config/                            # Configuración general del sistema
+    │   └── mednafen/                      # Preconfiguración de controles y emulador
+    ├── assets/                            # Audio e imágenes
     └── roms/
-        ├── nes/      #Contiene los juegos de Nintendo
-        ├── snes/     #Contiene los juegos de Super Nintendo
-        └── gba/      #Contiene los juegos de GameBoy Advance
+        ├── nes/                           # Juegos de Nintendo NES
+        ├── snes/                          # Juegos de Super Nintendo
+        └── gba/                           # Juegos de Game Boy Advance
+```
