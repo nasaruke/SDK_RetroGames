@@ -16,8 +16,8 @@ Todo archivo necesario para su correcto funcionamiento ya estan dentro de este G
   $ sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/nasaruke/SDK_RetroGames/main/src/instalar.sh)"
 
   **ADVERTENCIA: A la fecha de este Repositorio la consola funciona para un modelo de Raspberry Pi 4, puede que dentro de versiones antiguas o posteriores a este modelo presenten fallos en la instalacion.**
-# Proyecto Final - Sistemas Embebidos
 
+# Proyecto Final - Sistemas Embebidos
 **Materia:** 	Fundamentos de Sistemas Embebidos 
 **Semestre:**	2026-2
 **Autores:**  
