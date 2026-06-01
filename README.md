@@ -6,7 +6,7 @@
 												███████║██████╔╝██║  ██╗
 												╚══════╝╚═════╝ ╚═╝  ╚═╝
 
-## 💻 Metodo de Instalacion
+## Metodo de Instalacion
 Para una correcta instalacion es necesario que se tengan dos cosas:
 - Conexion por cable Ethernet a internet para la Raspberry
 - Un Sistema sin entorno grafico y limpio dentro de la Raspberry Pi 4 usado para las pruebas fue Raspberry Pi OS Lite.
@@ -24,21 +24,21 @@ Todo archivo necesario para su correcto funcionamiento ya estan dentro de este G
 		- Rosales Vigil Karla Sofia  
 		- Sanchez Diaz Daniel    
 
-## 📌 Descripción 
+## Descripción 
 Este proyecto emula una consola de Videojuegos dentro de una Raspberry Pi 4 que puede correr juegos de tres consolas distintas.
 	- Game Boy Advanced (GBA)
 	- Nintendo Entertainment System (NES)
 	- Super Nintendo Entertainment System (SNES)
 Este proyecto puede tambien hacer una copia de las roms que se le pasen por USB automaticamente, ademas de ordenarlas de acuerdo a la consola que esten destinadas, uso de mando Xbox Series S/X y interrupcion de juegos por si se requiere cambiar.
 
-## 🛠️ Hardware Utilizado  
+## Hardware Utilizado  
 - Imagen: Raspberry Pi OS Lite
 - Microcontrolador: Raspberry Pi 4
 - Gamepad: Control de Xbox Series S/X
 - Monitor: Cualquier monitor con coneccion HDMI
 - Audio: Bocinas externas con conexion jack de 3.5 mm 
 
-## 📂 Estructura del Proyecto  
+## Estructura del Proyecto  
 SDK_RetroGames/
 ├── README.md
 ├── LICENSE                               #Licencia
