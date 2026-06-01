@@ -44,6 +44,7 @@ Este proyecto puede tambien hacer una copia de las roms que se le pasen por USB 
 - Audio: Bocinas externas con conexion jack de 3.5 mm 
 
 ## Estructura del Proyecto  
+
 SDK_RetroGames/
 ├── README.md
 ├── LICENSE                               #Licencia
