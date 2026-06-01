@@ -30,6 +30,7 @@ Todo archivo necesario para su correcto funcionamiento ya estan dentro de este G
 
 ## Descripción 
 Este proyecto emula una consola de Videojuegos dentro de una Raspberry Pi 4 que puede correr juegos de tres consolas distintas.
+
 	- Game Boy Advanced (GBA)
 	- Nintendo Entertainment System (NES)
 	- Super Nintendo Entertainment System (SNES)
