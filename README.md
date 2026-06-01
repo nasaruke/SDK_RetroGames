@@ -1,7 +1,5 @@
 <div align="center">
 
-<div align="center">
-
 ```text
 ███████╗██████╗ ██╗  ██╗
 ██╔════╝██╔══██╗██║ ██╔╝
@@ -9,8 +7,6 @@
 ╚════██║██║  ██║██╔═██╗ 
 ███████║██████╔╝██║  ██╗
 ╚══════╝╚═════╝ ╚═╝  ╚═╝
-SDK Retro Games
-</div> `
 
 ## 💻 Metodo de Instalacion
 Para una correcta instalacion es necesario que se tengan dos cosas:
