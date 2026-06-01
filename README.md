@@ -9,7 +9,7 @@
 ## Metodo de Instalacion
 Para una correcta instalacion es necesario que se tengan dos cosas:
 - Conexion por cable Ethernet a internet para la Raspberry
-- Un Sistema sin entorno grafico y limpio dentro de la Raspberry Pi 4 usado para las pruebas fue Raspberry Pi OS Lite.
+- Un Sistema sin entorno grafico y limpio dentro de la Raspberry Pi 4, el usado para las pruebas fue Raspberry Pi OS Lite.
 
 Todo archivo necesario para su correcto funcionamiento ya estan dentro de este GitHub por lo que no es necesario cambiar o agregar algun otro detalle, para que se inicialice la instalacion automaticamente dentro de la Raspberry solo es necesario teclear el siguiente comando:
   $ sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/nasaruke/SDK_RetroGames/main/src/instalar.sh)"
