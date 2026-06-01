@@ -8,6 +8,9 @@
 ███████║██████╔╝██║  ██╗
 ╚══════╝╚═════╝ ╚═╝  ╚═╝
 
+SDK Retro Games
+</div>
+
 ## 💻 Metodo de Instalacion
 Para una correcta instalacion es necesario que se tengan dos cosas:
 - Conexion por cable Ethernet a internet para la Raspberry
