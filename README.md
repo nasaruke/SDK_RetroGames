@@ -43,7 +43,7 @@ Este proyecto puede tambien hacer una copia de las roms que se le pasen por USB 
 - Monitor: Cualquier monitor con coneccion HDMI
 - Audio: Bocinas externas con conexion jack de 3.5 mm 
 
-## 📂 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```text
 SDK_RetroGames/
