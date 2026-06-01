@@ -1,10 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-# Instalador para Consola Retro SDK en Raspberry Pi OS Lite
-# Ejecutar con:
-# sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/nasaruke/SDK_RetroGames/main/src/instalar.sh)"
-
 clear || true
 
 echo ""
@@ -13,7 +9,6 @@ echo "  INSTALACIÓN CONSOLA RETRO SDK EN RASPBERRY PI"
 echo "==================================================="
 echo ""
 
-# Detectar usuario real aunque se corra con sudo
 if [ -n "${SUDO_USER:-}" ] && [ "${SUDO_USER:-}" != "root" ]; then
     USUARIO="$SUDO_USER"
 else
@@ -32,12 +27,6 @@ if [ ! -d "$HOME_DIR" ]; then
     exit 1
 fi
 
-echo "Usuario detectado: $USUARIO"
-echo "Home: $HOME_DIR"
-echo "Proyecto: $RUTA_PROYECTO"
-echo "Log: $LOG_FILE"
-echo ""
-
 run_step() {
     local nombre="$1"
     shift
@@ -48,15 +37,9 @@ run_step() {
     "$@"
 }
 
-# ------------------------------------------------------------------
-# 0. Sistema base
-# ------------------------------------------------------------------
 run_step "Actualizando sistema base" apt update
 run_step "Instalando paquetes base" apt install -y git curl unzip python3 python3-pip python3-dev
 
-# ------------------------------------------------------------------
-# 1. Dependencias SDL/Pygame/USB/Mednafen
-# ------------------------------------------------------------------
 run_step "Instalando dependencias SDL" apt install -y \
     libsdl2-2.0-0 \
     libsdl2-dev \
@@ -65,11 +48,8 @@ run_step "Instalando dependencias SDL" apt install -y \
     libsdl2-ttf-dev
 
 run_step "Instalando Pygame y PyUDEV" apt install -y python3-pygame python3-pyudev
-
 run_step "Instalando Mednafen" apt install -y mednafen
 
-# Mednafen normalmente queda en /usr/games/mednafen.
-# El código usa "mednafen", por eso se crea enlace global.
 if [ -x /usr/games/mednafen ]; then
     ln -sf /usr/games/mednafen /usr/local/bin/mednafen
 elif command -v mednafen >/dev/null 2>&1; then
@@ -79,14 +59,8 @@ else
     exit 1
 fi
 
-# ------------------------------------------------------------------
-# 2. Permisos de usuario para pantalla, audio y controles
-# ------------------------------------------------------------------
 run_step "Agregando usuario a grupos video/audio/input/render" usermod -aG video,audio,input,render "$USUARIO"
 
-# ------------------------------------------------------------------
-# 3. Crear estructura del proyecto
-# ------------------------------------------------------------------
 echo ""
 echo "==================================================="
 echo "Creando estructura de directorios"
@@ -100,9 +74,6 @@ mkdir -p /media/pi/usb_retro
 
 chown -R "$USUARIO:$USUARIO" "$RUTA_PROYECTO" "$HOME_DIR/.mednafen" /media/pi
 
-# ------------------------------------------------------------------
-# 4. Descargar código desde GitHub
-# ------------------------------------------------------------------
 echo ""
 echo "==================================================="
 echo "Descargando código fuente"
@@ -118,9 +89,6 @@ cp "$HOME_DIR/SDK_RetroGames/src/"*.sh "$RUTA_SRC/" 2>/dev/null || true
 
 chown -R "$USUARIO:$USUARIO" "$RUTA_PROYECTO"
 
-# ------------------------------------------------------------------
-# 5. Descargar assets, configuración y ROMs desde branch instalaciones
-# ------------------------------------------------------------------
 echo ""
 echo "==================================================="
 echo "Descargando assets, configuración y ROMs"
@@ -135,23 +103,20 @@ chown -R "$USUARIO:$USUARIO" "$TEMP_DIR"
 
 curl -fL "$REPO_RAW/assets.zip" -o "$TEMP_DIR/assets.zip"
 curl -fL "$REPO_RAW/config.zip" -o "$TEMP_DIR/config.zip"
-curl -fL "$REPO_RAW/nes.zip"    -o "$TEMP_DIR/nes.zip"
-curl -fL "$REPO_RAW/snes.zip"   -o "$TEMP_DIR/snes.zip"
-curl -fL "$REPO_RAW/gba.zip"    -o "$TEMP_DIR/gba.zip"
+curl -fL "$REPO_RAW/nes.zip" -o "$TEMP_DIR/nes.zip"
+curl -fL "$REPO_RAW/snes.zip" -o "$TEMP_DIR/snes.zip"
+curl -fL "$REPO_RAW/gba.zip" -o "$TEMP_DIR/gba.zip"
 
 unzip -oq "$TEMP_DIR/assets.zip" -d "$RUTA_SRC/"
 unzip -oq "$TEMP_DIR/config.zip" -d "$RUTA_SRC/"
-unzip -oq "$TEMP_DIR/nes.zip"    -d "$RUTA_SRC/roms/"
-unzip -oq "$TEMP_DIR/snes.zip"   -d "$RUTA_SRC/roms/"
-unzip -oq "$TEMP_DIR/gba.zip"    -d "$RUTA_SRC/roms/"
+unzip -oq "$TEMP_DIR/nes.zip" -d "$RUTA_SRC/roms/"
+unzip -oq "$TEMP_DIR/snes.zip" -d "$RUTA_SRC/roms/"
+unzip -oq "$TEMP_DIR/gba.zip" -d "$RUTA_SRC/roms/"
 
 rm -rf "$TEMP_DIR" "$HOME_DIR/SDK_RetroGames"
 
 chown -R "$USUARIO:$USUARIO" "$RUTA_PROYECTO"
 
-# ------------------------------------------------------------------
-# 6. Permisos sudo para USB y apagado
-# ------------------------------------------------------------------
 echo ""
 echo "==================================================="
 echo "Configurando permisos sudo para USB y apagado"
@@ -163,16 +128,11 @@ SUDOERS
 
 chmod 440 /etc/sudoers.d/consola_retro
 
-# ------------------------------------------------------------------
-# 7. Configuración de Mednafen y permisos correctos
-# ------------------------------------------------------------------
 echo ""
 echo "==================================================="
 echo "Configurando Mednafen"
 echo "==================================================="
 
-# Generar configuración inicial de Mednafen como usuario real.
-# Puede fallar si no hay display; no es crítico.
 sudo -u "$USUARIO" env HOME="$HOME_DIR" /usr/local/bin/mednafen >/tmp/mednafen_init.log 2>&1 &
 MEDNAFEN_PID=$!
 
@@ -197,9 +157,6 @@ if [ -f "$HOME_DIR/.mednafen/mednafen.cfg" ]; then
     chmod 644 "$HOME_DIR/.mednafen/mednafen.cfg"
 fi
 
-# ------------------------------------------------------------------
-# 8. Variables SDL en .bashrc para pruebas manuales
-# ------------------------------------------------------------------
 echo ""
 echo "==================================================="
 echo "Configurando variables SDL en .bashrc"
@@ -217,15 +174,11 @@ fi
 
 chown "$USUARIO:$USUARIO" "$HOME_DIR/.bashrc"
 
-# ------------------------------------------------------------------
-# 9. Desactivar cron viejo y crear servicio systemd
-# ------------------------------------------------------------------
 echo ""
 echo "==================================================="
 echo "Configurando autoarranque con systemd"
 echo "==================================================="
 
-# Quitar cron anterior para que no haya dos arranques simultáneos.
 if crontab -u "$USUARIO" -l 2>/dev/null | grep -q "consola_retro\|main.py"; then
     crontab -u "$USUARIO" -l 2>/dev/null | grep -v "consola_retro\|main.py" | crontab -u "$USUARIO" -
     echo "Cron viejo eliminado."
@@ -276,23 +229,16 @@ SERVICE
 systemctl daemon-reload
 systemctl enable consola-retro.service
 
-# ------------------------------------------------------------------
-# 10. TTY de mantenimiento
-# ------------------------------------------------------------------
 echo ""
 echo "==================================================="
 echo "Configurando tty2 para mantenimiento"
 echo "==================================================="
 
-# Para mantenimiento se puede usar Ctrl + Alt + F2.
 systemctl enable getty@tty2.service 2>/dev/null || true
 
-# ------------------------------------------------------------------
-# 11. Ocultar mensajes de arranque
-# ------------------------------------------------------------------
 echo ""
 echo "==================================================="
-echo "Ajustando cmdline.txt"
+echo "Ocultando mensajes de arranque"
 echo "==================================================="
 
 CMDLINE="/boot/firmware/cmdline.txt"
@@ -301,22 +247,45 @@ if [ ! -f "$CMDLINE" ]; then
 fi
 
 if [ -f "$CMDLINE" ]; then
-    # Quitar init=/bin/bash si quedó de modo recuperación.
     sed -i 's/ *init=\/bin\/bash//g' "$CMDLINE"
 
-    if ! grep -q "quiet loglevel=0 logo.nologo fsck.mode=skip" "$CMDLINE"; then
-        sed -i 's/$/ quiet loglevel=0 logo.nologo fsck.mode=skip rd.systemd.show_status=false rd.udev.log_level=3/' "$CMDLINE"
-    fi
+    for PARAM in \
+        "quiet" \
+        "loglevel=0" \
+        "logo.nologo" \
+        "vt.global_cursor_default=0" \
+        "consoleblank=0" \
+        "systemd.show_status=false" \
+        "rd.systemd.show_status=false" \
+        "udev.log_level=0" \
+        "rd.udev.log_level=0" \
+        "plymouth.ignore-serial-consoles"
+    do
+        if ! grep -qw "$PARAM" "$CMDLINE"; then
+            sed -i "s/$/ $PARAM/" "$CMDLINE"
+        fi
+    done
 fi
 
 truncate -s 0 /etc/motd || true
 truncate -s 0 /etc/issue || true
 truncate -s 0 /etc/issue.net || true
-sed -i 's/^#\?PrintLastLog=.*/PrintLastLog=no/' /etc/systemd/logind.conf || true
 
-# ------------------------------------------------------------------
-# 12. Resumen y reinicio
-# ------------------------------------------------------------------
+mkdir -p /etc/systemd/system.conf.d
+cat > /etc/systemd/system.conf.d/quiet.conf <<'EOF'
+[Manager]
+LogLevel=emerg
+ShowStatus=no
+EOF
+
+cat > /etc/profile.d/hide_cursor.sh <<'EOF'
+setterm -cursor off 2>/dev/null || true
+EOF
+chmod +x /etc/profile.d/hide_cursor.sh
+
+sed -i 's/^#\?PrintLastLog.*/PrintLastLog no/' /etc/ssh/sshd_config 2>/dev/null || true
+sed -i 's/^#\?PrintLastLog=.*/PrintLastLog=no/' /etc/systemd/logind.conf 2>/dev/null || true
+
 echo ""
 echo "==================================================="
 echo " INSTALACIÓN COMPLETADA"
